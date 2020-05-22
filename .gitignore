@@ -3,3 +3,4 @@ __pycache__/
 settings.py
 venv/
 .idea/
+sketch.py
