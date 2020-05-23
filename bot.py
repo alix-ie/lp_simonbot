@@ -3,6 +3,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 import ephem
 from datetime import datetime, date
+import string
 
 import settings
 
@@ -17,11 +18,19 @@ def cities(update, context):
 
 
 def word_count(update, context):
-    pass
+    user_text = update.message.text.split()[1:]
+    len_text = len(user_text)
 
+    for word in user_text:
+        if len(word) == 1 and word in string.punctuation:
+            len_text -= 1
 
-def char_count(update, context):
-    pass
+    if len_text == 0:
+        update.message.reply_text('No words')
+    elif len_text == 1:
+        update.message.reply_text('1 word')
+    else:
+        update.message.reply_text(f'{len_text} words')
 
 
 def harvest_moon(update, context):
@@ -70,6 +79,7 @@ def main():
     dp.add_handler(CommandHandler('start', greet_user))
     dp.add_handler(CommandHandler('locate', constellation))
     dp.add_handler(CommandHandler('next_full_moon', harvest_moon))
+    dp.add_handler(CommandHandler('wordcount', word_count))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
     logging.info('Bot has started')
