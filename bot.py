@@ -2,7 +2,7 @@ import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 import ephem
-from datetime import date
+from datetime import datetime, date
 
 import settings
 
@@ -10,6 +10,33 @@ logging.basicConfig(filename='bot.log', level=logging.INFO)
 
 PROXY = {'proxy_url': settings.PROXY_URL,
          'urllib3_proxy_kwargs': {'username': settings.PROXY_USERNAME, 'password': settings.PROXY_PASSWORD}}
+
+
+def cities(update, context):
+    pass
+
+
+def word_count(update, context):
+    pass
+
+
+def char_count(update, context):
+    pass
+
+
+def harvest_moon(update, context):
+    try:
+        user_date = datetime.strptime(update.message.text.split()[1], '%d-%m-%Y')
+    except ValueError:
+        update.message.reply_text('Wrong date format')
+        return
+
+    user_date = user_date.strftime('%Y/%m/%d')
+
+    next_date = ephem.localtime(ephem.next_full_moon(user_date))
+    next_date = next_date.strftime('%d %B %Y')
+
+    update.message.reply_text(f'Next full moon is on {next_date}')
 
 
 def constellation(update, context):
@@ -42,6 +69,7 @@ def main():
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler('start', greet_user))
     dp.add_handler(CommandHandler('locate', constellation))
+    dp.add_handler(CommandHandler('next_full_moon', harvest_moon))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
     logging.info('Bot has started')
