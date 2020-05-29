@@ -4,6 +4,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import ephem
 from datetime import datetime, date
 import string
+from geonamescache import GeonamesCache as gc
+import random
 
 import settings
 
@@ -12,9 +14,58 @@ logging.basicConfig(filename='bot.log', level=logging.INFO)
 PROXY = {'proxy_url': settings.PROXY_URL,
          'urllib3_proxy_kwargs': {'username': settings.PROXY_USERNAME, 'password': settings.PROXY_PASSWORD}}
 
+chat_cities = {}
+
+
+def collect_cities():
+    cities_dict = gc().get_cities()
+    cities_set = {cities_dict[val]['name'] for val in cities_dict}
+    cities_abc = {char: set() for char in string.ascii_lowercase}
+
+    for city in cities_set:
+        cities_abc[city[0].lower()].add(city)
+
+    return cities_abc
+
 
 def cities(update, context):
-    pass
+    user_city = update.message.text
+
+    try:
+        user_city = user_city[user_city.index(' '):].strip()
+    except ValueError:
+        update.message.reply_text("I don't understand")
+        return
+
+    chat_id = update.effective_chat.id
+    chat_status = chat_cities.get(chat_id, False)
+
+    if not chat_status:
+        chat_cities[chat_id] = set()
+
+    if user_city == 'new game':
+        chat_cities[chat_id].clear()
+        update.message.reply_text("I'm ready")
+        return
+
+    if user_city in chat_cities[chat_id]:
+        update.message.reply_text('This city has been already used')
+        return
+
+    chat_cities[chat_id].add(user_city)
+
+    try:
+        bot_city = random.choice(list(bot_cities[user_city[-1].lower()] - chat_cities[chat_id]))
+        chat_cities[chat_id].add(bot_city)
+
+        update.message.reply_text(f'{bot_city}, your turn')
+
+    except KeyError:
+        update.message.reply_text("I don't understand")
+
+    except IndexError:
+        chat_cities[chat_id].clear()
+        update.message.reply_text("I don't know. Can we start over?")
 
 
 def word_count(update, context):
@@ -80,6 +131,7 @@ def main():
     dp.add_handler(CommandHandler('locate', constellation))
     dp.add_handler(CommandHandler('next_full_moon', harvest_moon))
     dp.add_handler(CommandHandler('wordcount', word_count))
+    dp.add_handler(CommandHandler('cities', cities))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
     logging.info('Bot has started')
@@ -88,4 +140,5 @@ def main():
 
 
 if __name__ == '__main__':
+    bot_cities = collect_cities()
     main()
