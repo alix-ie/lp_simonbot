@@ -29,21 +29,17 @@ def collect_cities():
 
 
 def cities(update, context):
-    user_city = update.message.text
-
-    try:
-        user_city = user_city[user_city.index(' '):].strip()
-    except ValueError:
-        update.message.reply_text("I don't understand")
-        return
-
     chat_id = update.effective_chat.id
     chat_status = chat_cities.get(chat_id, False)
 
     if not chat_status:
         chat_cities[chat_id] = set()
 
-    if user_city == 'new game':
+    user_city = update.message.text
+
+    try:
+        user_city = user_city[user_city.index(' '):].strip()
+    except ValueError:
         chat_cities[chat_id].clear()
         update.message.reply_text("I'm ready")
         return
@@ -52,11 +48,9 @@ def cities(update, context):
         update.message.reply_text('This city has been already used')
         return
 
-    chat_cities[chat_id].add(user_city)
-
     try:
-        bot_city = random.choice(list(bot_cities[user_city[-1].lower()] - chat_cities[chat_id]))
-        chat_cities[chat_id].add(bot_city)
+        bot_city = random.choice(list(bot_cities[user_city[-1].lower()] - chat_cities[chat_id] - {user_city}))
+        chat_cities[chat_id].update((user_city, bot_city))
 
         update.message.reply_text(f'{bot_city}, your turn')
 
